@@ -1,12 +1,11 @@
 #include "serverDeclaration.h"
 
 
-// Find a user by ID
-User *findUserById(int id)
+User *findUserById(int userId)
 {
     for (int i = 0; i < users_size; i++)
     {
-        if (users[i].id == id)
+        if (users[i].id == userId)
         {
             return &users[i];
         }
@@ -14,12 +13,11 @@ User *findUserById(int id)
     return NULL;
 }
 
-// Find a user by username
-User *findUserByUsername(const char *username)
+User *findUserByUsername(const char *uname)
 {
     for (int i = 0; i < users_size; i++)
     {
-        if (strcmp(users[i].username, username) == 0)
+        if (strcmp(users[i].username, uname) == 0)
         {
             return &users[i];
         }
@@ -27,12 +25,11 @@ User *findUserByUsername(const char *username)
     return NULL;
 }
 
-// Find a course by ID
-Course *findCourseById(int id)
+Course *findCourseById(int courseId)
 {
     for (int i = 0; i < courses_size; i++)
     {
-        if (courses[i].id == id)
+        if (courses[i].id == courseId)
         {
             return &courses[i];
         }
@@ -40,12 +37,11 @@ Course *findCourseById(int id)
     return NULL;
 }
 
-// Find a course by code
-Course *findCourseByCode(const char *code)
+Course *findCourseByCode(const char *courseCode)
 {
     for (int i = 0; i < courses_size; i++)
     {
-        if (strcmp(courses[i].code, code) == 0)
+        if (strcmp(courses[i].code, courseCode) == 0)
         {
             return &courses[i];
         }
@@ -53,12 +49,11 @@ Course *findCourseByCode(const char *code)
     return NULL;
 }
 
-// Check if a student is enrolled in a course
-int isEnrolled(int studentId, int courseId)
+int isEnrolled(int sid, int cid)
 {
     for (int i = 0; i < enrollments_size; i++)
     {
-        if (enrollments[i].studentId == studentId && enrollments[i].courseId == courseId)
+        if (enrollments[i].studentId == sid && enrollments[i].courseId == cid)
         {
             return 1;
         }
@@ -66,7 +61,6 @@ int isEnrolled(int studentId, int courseId)
     return 0;
 }
 
-// Acquire a read lock on a file
 void acquireReadLock(const char *filename)
 {
     int fd = open(filename, O_RDONLY);
@@ -77,7 +71,6 @@ void acquireReadLock(const char *filename)
     }
 }
 
-// Acquire a write lock on a file
 void acquireWriteLock(const char *filename)
 {
     int fd = open(filename, O_WRONLY | O_CREAT, 0644);
@@ -88,7 +81,6 @@ void acquireWriteLock(const char *filename)
     }
 }
 
-// Release a lock on a file
 void releaseLock(const char *filename)
 {
     int fd = open(filename, O_RDONLY);
@@ -99,7 +91,6 @@ void releaseLock(const char *filename)
     }
 }
 
-// strdup implementation for systems that lack it
 char *strdup(const char *s)
 {
     size_t len = strlen(s) + 1;

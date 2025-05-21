@@ -1,37 +1,40 @@
 #include "serverDeclaration.h"
+
+
+
 char *handleAdminRequest(const char *request, int userId)
 {
-    char *response = (char *)malloc(BUFFER_SIZE);
     User *admin = findUserById(userId);
-    if (!admin || admin->type != ADMIN)
+    char *res = (char *)malloc(BUFFER_SIZE);
+    if (admin==NULL || admin->type != ADMIN)
     {
-        strcpy(response, "Access denied");
-        return response;
+        strcpy(res, "Access denied");
+        return res;
     }
 
-    char *token = strtok((char *)request, " ");
-    if (!token)
+    char *t = strtok((char *)request, " ");
+    if (!t)
     {
-        strcpy(response, "Invalid admin request");
-        return response;
+        strcpy(res, "Invalid request");
+        return res;
     }
 
-    char command[50];
-    strcpy(command, token);
+    char inp[50];
+    strcpy(inp, t);
 
-    if (strcmp(command, "ADD_STUDENT") == 0)
+    if (strcmp(inp, "ADD_STUDENT") == 0)
     {
         char *username = strtok(NULL, " ");
         char *password = strtok(NULL, " ");
         if (!username || !password)
         {
-            strcpy(response, "Invalid format");
-            return response;
+            strcpy(res, "Invalid format");
+            return res;
         }
         if (findUserByUsername(username))
         {
-            sprintf(response, "Student with username %s already exists", username);
-            return response;
+            sprintf(res, "Username %s already used by someone", username);
+            return res;
         }
         User student;
         student.id = users_size ? users[users_size - 1].id + 1 : 1;
@@ -44,21 +47,21 @@ char *handleAdminRequest(const char *request, int userId)
         users = (User *)realloc(users, (users_size + 1) * sizeof(User));
         users[users_size++] = student;
         saveData();
-        sprintf(response, "Student added successfully with ID %d", student.id);
+        sprintf(res, "Student added with the following details\nUserId: %d", student.id);
     }
-    else if (strcmp(command, "ADD_FACULTY") == 0)
+    else if (strcmp(inp, "ADD_FACULTY") == 0)
     {
         char *username = strtok(NULL, " ");
         char *password = strtok(NULL, " ");
         if (!username || !password)
         {
-            strcpy(response, "Invalid format");
-            return response;
+            strcpy(res, "Invalid format");
+            return res;
         }
         if (findUserByUsername(username))
         {
-            sprintf(response, "Faculty with username %s already exists", username);
-            return response;
+            sprintf(res, "Faculty with username %s already exists", username);
+            return res;
         }
         User faculty;
         faculty.id = users_size ? users[users_size - 1].id + 1 : 1;
@@ -71,72 +74,72 @@ char *handleAdminRequest(const char *request, int userId)
         users = (User *)realloc(users, (users_size + 1) * sizeof(User));
         users[users_size++] = faculty;
         saveData();
-        sprintf(response, "Faculty added successfully with ID %d", faculty.id);
+        sprintf(res, "Faculty added with the following details\nUserId: %d", faculty.id);
     }
-    else if (strcmp(command, "TOGGLE_STUDENT") == 0)
+    else if (strcmp(inp, "TOGGLE_STUDENT") == 0)
     {
         char *studentIdStr = strtok(NULL, " ");
         if (!studentIdStr)
         {
-            strcpy(response, "Invalid format");
-            return response;
+            strcpy(res, "Invalid format");
+            return res;
         }
         int studentId = atoi(studentIdStr);
         User *student = findUserById(studentId);
         if (!student || student->type != STUDENT)
         {
-            strcpy(response, "Student not found");
-            return response;
+            strcpy(res, "Student account not found");
+            return res;
         }
         student->active = !student->active;
         saveData();
-        sprintf(response, "Student %s %s successfully", student->username,
+        sprintf(res, "Student %s %s successfully", student->username,
                 student->active ? "activated" : "deactivated");
     }
-    else if (strcmp(command, "UPDATE_USER") == 0)
+    else if (strcmp(inp, "UPDATE_USER") == 0)
     {
         char *userIdStr = strtok(NULL, " ");
         char *field = strtok(NULL, " ");
         char *value = strtok(NULL, " ");
         if (!userIdStr || !field || !value)
         {
-            strcpy(response, "Invalid format");
-            return response;
+            strcpy(res, "Invalid format");
+            return res;
         }
         int userId = atoi(userIdStr);
         User *user = findUserById(userId);
         if (!user)
         {
-            strcpy(response, "User not found");
-            return response;
+            strcpy(res, "User not found");
+            return res;
         }
         if (strcmp(field, "password") == 0)
         {
             strncpy(user->password, value, MAX_STR - 1);
             user->password[MAX_STR - 1] = '\0';
             saveData();
-            strcpy(response, "Password updated successfully");
+            strcpy(res, "Password updated");
         }
         else if (strcmp(field, "username") == 0)
         {
             if (findUserByUsername(value))
             {
-                sprintf(response, "Username %s already exists", value);
+                sprintf(res, "Username %s already exists", value);
             }
             else
             {
                 strncpy(user->username, value, MAX_STR - 1);
                 user->username[MAX_STR - 1] = '\0';
                 saveData();
-                strcpy(response, "Username updated successfully");
+                strcpy(res, "Username updated successfully");
             }
         }
         else
         {
-            strcpy(response, "Invalid field to update");
+            strcpy(res, "Invalid field to update");
         }
     }
-    else if (strcmp(command, "VIEW_USERS") == 0)
+    else if (strcmp(inp, "VIEW_USERS") == 0)
     {
         char *result = (char *)malloc(BUFFER_SIZE);
         strcpy(result, "Users list:\n");
@@ -150,10 +153,10 @@ char *handleAdminRequest(const char *request, int userId)
                     users[i].active ? "Active" : "Inactive");
             strncat(result, line, BUFFER_SIZE - strlen(result) - 1);
         }
-        strcpy(response, result);
+        strcpy(res, result);
         free(result);
     }
-    else if (strcmp(command, "VIEW_COURSES") == 0)
+    else if (strcmp(inp, "VIEW_COURSES") == 0)
     {
         acquireReadLock(COURSE_FILE);
         char *result = (char *)malloc(BUFFER_SIZE);
@@ -169,13 +172,13 @@ char *handleAdminRequest(const char *request, int userId)
             strncat(result, line, BUFFER_SIZE - strlen(result) - 1);
         }
         releaseLock(COURSE_FILE);
-        strcpy(response, result);
+        strcpy(res, result);
         free(result);
     }
     else
     {
-        strcpy(response, "Invalid admin command");
+        strcpy(res, "Invalid admin inp");
     }
 
-    return response;
+    return res;
 }

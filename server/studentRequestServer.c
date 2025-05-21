@@ -1,31 +1,31 @@
 #include "serverDeclaration.h"
 char *handleStudentRequest(const char *request, int userId)
 {
-    char *response = (char *)malloc(BUFFER_SIZE);
+    char *res = (char *)malloc(BUFFER_SIZE);
     User *student = findUserById(userId);
     if (!student || student->type != STUDENT)
     {
-        strcpy(response, "Access denied");
-        return response;
+        strcpy(res, "Access denied");
+        return res;
     }
 
-    char *token = strtok((char *)request, " ");
-    if (!token)
+    char *t = strtok((char *)request, " ");
+    if (!t)
     {
-        strcpy(response, "Invalid student request");
-        return response;
+        strcpy(res, "Invalid request");
+        return res;
     }
 
-    char command[50];
-    strcpy(command, token);
+    char inp[50];
+    strcpy(inp, t);
 
-    if (strcmp(command, "ENROLL") == 0)
+    if (strcmp(inp, "ENROLL") == 0)
     {
         char *courseCode = strtok(NULL, " ");
         if (!courseCode)
         {
-            strcpy(response, "Invalid format");
-            return response;
+            strcpy(res, "Invalid format");
+            return res;
         }
         acquireWriteLock(COURSE_FILE);
         acquireWriteLock(ENROLLMENT_FILE);
@@ -34,41 +34,41 @@ char *handleStudentRequest(const char *request, int userId)
         {
             releaseLock(COURSE_FILE);
             releaseLock(ENROLLMENT_FILE);
-            strcpy(response, "Course not found");
-            return response;
+            strcpy(res, "Course not found in the database");
+            return res;
         }
         if (isEnrolled(student->id, course->id))
         {
             releaseLock(COURSE_FILE);
             releaseLock(ENROLLMENT_FILE);
-            strcpy(response, "Already enrolled in this course");
-            return response;
+            strcpy(res, "you are already enrolled in this course");
+            return res;
         }
         if (course->enrolledStudents >= course->totalSeats)
         {
             releaseLock(COURSE_FILE);
             releaseLock(ENROLLMENT_FILE);
-            strcpy(response, "Course is full");
-            return response;
+            strcpy(res, "No seat is empty in the course");
+            return res;
         }
-        Enrollment enrollment;
-        enrollment.studentId = student->id;
-        enrollment.courseId = course->id;
+        Enrollment e;
+        e.studentId = student->id;
+        e.courseId = course->id;
         enrollments = (Enrollment *)realloc(enrollments, (enrollments_size + 1) * sizeof(Enrollment));
-        enrollments[enrollments_size++] = enrollment;
+        enrollments[enrollments_size++] = e;
         course->enrolledStudents++;
         saveData();
         releaseLock(COURSE_FILE);
         releaseLock(ENROLLMENT_FILE);
-        sprintf(response, "Successfully enrolled in %s - %s", course->code, course->name);
+        sprintf(res, "Successfully enrolled in %s - %s", course->code, course->name);
     }
-    else if (strcmp(command, "UNENROLL") == 0)
+    else if (strcmp(inp, "UNENROLL") == 0)
     {
         char *courseCode = strtok(NULL, " ");
         if (!courseCode)
         {
-            strcpy(response, "Invalid format");
-            return response;
+            strcpy(res, "Invalid format");
+            return res;
         }
         acquireWriteLock(COURSE_FILE);
         acquireWriteLock(ENROLLMENT_FILE);
@@ -77,8 +77,8 @@ char *handleStudentRequest(const char *request, int userId)
         {
             releaseLock(COURSE_FILE);
             releaseLock(ENROLLMENT_FILE);
-            strcpy(response, "Course not found");
-            return response;
+            strcpy(res, "Course not found");
+            return res;
         }
         int found = 0;
         for (int i = 0; i < enrollments_size; i++)
@@ -89,7 +89,7 @@ char *handleStudentRequest(const char *request, int userId)
                 {
                     enrollments[j] = enrollments[j + 1];
                 }
-                enrollments_size--;
+                enrollments_size-=1;
                 enrollments = (Enrollment *)realloc(enrollments, enrollments_size * sizeof(Enrollment));
                 found = 1;
                 break;
@@ -99,16 +99,16 @@ char *handleStudentRequest(const char *request, int userId)
         {
             releaseLock(COURSE_FILE);
             releaseLock(ENROLLMENT_FILE);
-            strcpy(response, "Not enrolled in this course");
-            return response;
+            strcpy(res, "Not enrolled in this course");
+            return res;
         }
         course->enrolledStudents--;
         saveData();
         releaseLock(COURSE_FILE);
         releaseLock(ENROLLMENT_FILE);
-        sprintf(response, "Successfully unenrolled from %s - %s", course->code, course->name);
+        sprintf(res, "Successfully deenrolled from %s - %s", course->code, course->name);
     }
-    else if (strcmp(command, "VIEW_ENROLLED") == 0)
+    else if (strcmp(inp, "VIEW_ENROLLED") == 0)
     {
         acquireReadLock(COURSE_FILE);
         acquireReadLock(ENROLLMENT_FILE);
@@ -133,19 +133,19 @@ char *handleStudentRequest(const char *request, int userId)
         releaseLock(ENROLLMENT_FILE);
         if (!hasEnrollments)
         {
-            strcpy(response, "You are not enrolled in any courses");
+            strcpy(res, "You are not enrolled in any courses");
         }
         else
         {
-            strcpy(response, result);
+            strcpy(res, result);
         }
         free(result);
     }
-    else if (strcmp(command, "VIEW_COURSES") == 0)
+    else if (strcmp(inp, "VIEW_COURSES") == 0)
     {
         acquireReadLock(COURSE_FILE);
         char *result = (char *)malloc(BUFFER_SIZE);
-        strcpy(result, "Available courses:\n");
+        strcpy(result, "list of available courses:\n");
         for (int i = 0; i < courses_size; i++)
         {
             User *faculty = findUserById(courses[i].facultyId);
@@ -158,32 +158,32 @@ char *handleStudentRequest(const char *request, int userId)
             strncat(result, line, BUFFER_SIZE - strlen(result) - 1);
         }
         releaseLock(COURSE_FILE);
-        strcpy(response, result);
+        strcpy(res, result);
         free(result);
     }
-    else if (strcmp(command, "CHANGE_PASSWORD") == 0)
+    else if (strcmp(inp, "CHANGE_PASSWORD") == 0)
     {
         char *oldPassword = strtok(NULL, " ");
         char *newPassword = strtok(NULL, " ");
         if (!oldPassword || !newPassword)
         {
-            strcpy(response, "Invalid format");
-            return response;
+            strcpy(res, "Invalid format");
+            return res;
         }
         if (strcmp(student->password, oldPassword) != 0)
         {
-            strcpy(response, "Incorrect current password");
-            return response;
+            strcpy(res, "Incorrect current password");
+            return res;
         }
         strncpy(student->password, newPassword, MAX_STR - 1);
         student->password[MAX_STR - 1] = '\0';
         saveData();
-        strcpy(response, "Password changed successfully");
+        strcpy(res, "Password changed successfully");
     }
     else
     {
-        strcpy(response, "Invalid student command");
+        strcpy(res, "Invalid student inp");
     }
 
-    return response;
+    return res;
 }

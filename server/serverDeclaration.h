@@ -5,13 +5,13 @@
 
 
 // macros
-#define PORT 8080
-#define MAX_CLIENTS 100
-#define BUFFER_SIZE 1024
-#define MAX_COURSE_SEATS 10
-#define MAX_USERS 1000
-#define MAX_COURSES 1000
-#define MAX_ENROLLMENTS 10000
+#define PORT 3000
+#define MAX_CLIENTS 50
+#define BUFFER_SIZE 1000
+#define MAX_COURSE_SEATS 5
+#define MAX_USERS 50
+#define MAX_COURSES 50
+#define MAX_ENROLLMENTS 100
 #define MAX_STR 256
 
 
@@ -60,7 +60,6 @@ extern sem_t mutex;
 
 
 // global variables
-// Global variables for storing data
 
 
 extern User* users;
@@ -96,6 +95,7 @@ void acquireReadLock(const char *filename);
 void acquireWriteLock(const char *filename);
 void releaseLock(const char *filename);
 char *strdup(const char *s); // For systems lacking strdup
+void signalHandler(int signal_num);
 
 
 

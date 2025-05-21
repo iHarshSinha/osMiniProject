@@ -1,33 +1,33 @@
 #include "serverDeclaration.h"
 char *handleFacultyRequest(const char *request, int userId)
 {
-    char *response = (char *)malloc(BUFFER_SIZE);
     User *faculty = findUserById(userId);
+    char *res = (char *)malloc(BUFFER_SIZE);
     if (!faculty || faculty->type != FACULTY)
     {
-        strcpy(response, "Access denied");
-        return response;
+        strcpy(res, "Access denied");
+        return res;
     }
 
-    char *token = strtok((char *)request, " ");
-    if (!token)
+    char *t = strtok((char *)request, " ");
+    if (!t)
     {
-        strcpy(response, "Invalid faculty request");
-        return response;
+        strcpy(res, "Invalid request");
+        return res;
     }
 
-    char command[50];
-    strcpy(command, token);
+    char inp[50];
+    strcpy(inp, t);
 
-    if (strcmp(command, "ADD_COURSE") == 0)
+    if (strcmp(inp, "ADD_COURSE") == 0)
     {
         char *courseCode = strtok(NULL, " ");
         char *seatsStr = strtok(NULL, " ");
         char *courseName = strtok(NULL, "");
         if (!courseCode || !seatsStr || !courseName)
         {
-            strcpy(response, "Invalid format");
-            return response;
+            strcpy(res, "Invalid format");
+            return res;
         }
         int seats = atoi(seatsStr);
         acquireWriteLock(COURSE_FILE);
@@ -36,8 +36,8 @@ char *handleFacultyRequest(const char *request, int userId)
             if (strcmp(courses[i].code, courseCode) == 0)
             {
                 releaseLock(COURSE_FILE);
-                sprintf(response, "Course with code %s already exists", courseCode);
-                return response;
+                sprintf(res, "Course with code %s already exists in the database", courseCode);
+                return res;
             }
         }
         Course course;
@@ -53,15 +53,15 @@ char *handleFacultyRequest(const char *request, int userId)
         courses[courses_size++] = course;
         saveData();
         releaseLock(COURSE_FILE);
-        sprintf(response, "Course added successfully: %s - %s", courseCode, courseName);
+        sprintf(res, "Course added: %s - %s", courseCode, courseName);
     }
-    else if (strcmp(command, "REMOVE_COURSE") == 0)
+    else if (strcmp(inp, "REMOVE_COURSE") == 0)
     {
         char *courseCode = strtok(NULL, " ");
         if (!courseCode)
         {
-            strcpy(response, "Invalid format");
-            return response;
+            strcpy(res, "Invalid format");
+            return res;
         }
         acquireWriteLock(COURSE_FILE);
         acquireWriteLock(ENROLLMENT_FILE);
@@ -75,7 +75,7 @@ char *handleFacultyRequest(const char *request, int userId)
                 {
                     courses[j] = courses[j + 1];
                 }
-                courses_size--;
+                courses_size-=1;
                 courses = (Course *)realloc(courses, courses_size * sizeof(Course));
                 break;
             }
@@ -84,8 +84,8 @@ char *handleFacultyRequest(const char *request, int userId)
         {
             releaseLock(COURSE_FILE);
             releaseLock(ENROLLMENT_FILE);
-            strcpy(response, "Course not found or you don't have permission to remove it");
-            return response;
+            strcpy(res, "Course not found or you don't have permission to remove it");
+            return res;
         }
         int new_size = 0;
         for (int i = 0; i < enrollments_size; i++)
@@ -101,9 +101,9 @@ char *handleFacultyRequest(const char *request, int userId)
         saveData();
         releaseLock(COURSE_FILE);
         releaseLock(ENROLLMENT_FILE);
-        sprintf(response, "Course %s removed successfully", courseCode);
+        sprintf(res, "Course %s removed successfully", courseCode);
     }
-    else if (strcmp(command, "VIEW_ENROLLMENTS") == 0)
+    else if (strcmp(inp, "VIEW_ENROLLMENTS") == 0)
     {
         acquireReadLock(COURSE_FILE);
         acquireReadLock(ENROLLMENT_FILE);
@@ -145,15 +145,15 @@ char *handleFacultyRequest(const char *request, int userId)
         releaseLock(ENROLLMENT_FILE);
         if (!hasCourses)
         {
-            strcpy(response, "You have not offered any courses");
+            strcpy(res, "You have not offered any courses");
         }
         else
         {
-            strcpy(response, result);
+            strcpy(res, result);
         }
         free(result);
     }
-    else if (strcmp(command, "VIEW_COURSES") == 0)
+    else if (strcmp(inp, "VIEW_COURSES") == 0)
     {
         acquireReadLock(COURSE_FILE);
         char *result = (char *)malloc(BUFFER_SIZE);
@@ -174,37 +174,37 @@ char *handleFacultyRequest(const char *request, int userId)
         releaseLock(COURSE_FILE);
         if (!hasCourses)
         {
-            strcpy(response, "You have not offered any courses");
+            strcpy(res, "You have not offered any courses");
         }
         else
         {
-            strcpy(response, result);
+            strcpy(res, result);
         }
         free(result);
     }
-    else if (strcmp(command, "CHANGE_PASSWORD") == 0)
+    else if (strcmp(inp, "CHANGE_PASSWORD") == 0)
     {
-        char *oldPassword = strtok(NULL, " ");
-        char *newPassword = strtok(NULL, " ");
-        if (!oldPassword || !newPassword)
+        char *old = strtok(NULL, " ");
+        char *new = strtok(NULL, " ");
+        if (!old || !new)
         {
-            strcpy(response, "Invalid format");
-            return response;
+            strcpy(res, "Invalid format");
+            return res;
         }
-        if (strcmp(faculty->password, oldPassword) != 0)
+        if (strcmp(faculty->password, old) != 0)
         {
-            strcpy(response, "Incorrect current password");
-            return response;
+            strcpy(res, "Current password is wrong");
+            return res;
         }
-        strncpy(faculty->password, newPassword, MAX_STR - 1);
+        strncpy(faculty->password, new, MAX_STR - 1);
         faculty->password[MAX_STR - 1] = '\0';
         saveData();
-        strcpy(response, "Password changed successfully");
+        strcpy(res, "Password updated");
     }
     else
     {
-        strcpy(response, "Invalid faculty command");
+        strcpy(res, "Invalid faculty inp");
     }
 
-    return response;
+    return res;
 }
